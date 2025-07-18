@@ -1,0 +1,32 @@
+<h1>Your Sketch and Generated Thumbnail</h1>
+
+<% if notice.present? %>
+  <div style="color: green; margin-bottom: 20px;">
+    <%= notice %>
+  </div>
+<% end %>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+  <div>
+    <h2>Original Sketch (cool)</h2>
+    <% if @sketch.image.attached? %>
+      <%= image_tag @sketch.image, style: "max-width: 500px; max-height: 500px;" %>
+    <% else %>
+      <p>No image attached</p>
+    <% end %>
+  </div>
+
+  <div>
+    <h2>Generated Thumbnaillll</h2>
+    <% if @sketch.status == "completed" && @sketch.generated_thumbnail_url.present? %>
+      <%= image_tag @sketch.generated_thumbnail_url, style: "max-width: 500px; max-height: 500px;" %>
+    <% else %>
+      <p>Status: <%= @sketch.status || "Not processed" %></p>
+    <% end %>
+  </div>
+</div>
+
+<div style="margin-top: 20px;">
+  <%= link_to "Upload Another Sketch", new_sketch_path %> |
+  <%= link_to "Back to Home", root_path %>
+</div>

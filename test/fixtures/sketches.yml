@@ -1,0 +1,7 @@
+one:
+  status: MyString
+  generated_thumbnail_url: MyString
+
+two:
+  status: MyString
+  generated_thumbnail_url: MyString 
