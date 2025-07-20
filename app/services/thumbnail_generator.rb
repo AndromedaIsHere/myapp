@@ -95,7 +95,8 @@ class ThumbnailGenerator
         puts "Form Data: #{form_data}"
         request.set_form(form_data, "multipart/form-data")
     
-        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true, 
+                read_timeout: 300, open_timeout: 60) do |http|
           http.request(request)
         end
 
