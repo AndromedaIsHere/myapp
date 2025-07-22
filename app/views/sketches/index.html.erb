@@ -1,0 +1,27 @@
+<h1>Your Sketches</h1>
+
+<% if @sketches.any? %>
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <% @sketches.each do |sketch| %>
+      <div style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; width: 200px;">
+        <h3><%= link_to "Sketch ##{sketch.id}", sketch_path(sketch) %></h3>
+        <% if sketch.generated_thumbnail_url.present? %>
+          <%= image_tag sketch.generated_thumbnail_url, style: "max-width: 100%; height: auto;" %>
+        <% elsif sketch.image.attached? %>
+          <%= image_tag sketch.image, style: "max-width: 100%; height: auto;" %>
+        <% else %>
+          <p>No image</p>
+        <% end %>
+        <p>Status: <%= sketch.status %></p>
+        <p>Created: <%= sketch.created_at.strftime("%Y-%m-%d %H:%M") %></p>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <p>You have not uploaded any sketches yet.</p>
+  <%= link_to "Create Your First Sketch", new_sketch_path, style: "display: inline-block; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; margin-top: 10px;" %>
+<% end %>
+
+<div style="margin-top: 20px;">
+  <%= link_to "Upload New Sketch", new_sketch_path, style: "display: inline-block; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px;" %>
+</div> 

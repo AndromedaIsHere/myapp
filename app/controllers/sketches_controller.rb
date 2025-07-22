@@ -1,27 +1,35 @@
 class SketchesController < ApplicationController
+  before_action :authenticate_user!
+
+  def index
+    @sketches = current_user.sketches.order(created_at: :desc)
+  end
+
   def new
-    @sketch = Sketch.new
+    @sketch = current_user.sketches.build
   end
 
   def create
-    @sketch = Sketch.new(sketch_params)
+    @sketch = current_user.sketches.build(sketch_params)
+    @sketch.status = "processing"
+
+    # Attach image from base64 data if present
     if params[:sketch][:image_data].present?
-      data = params[:sketch][:image_data]
-      content_type = data[%r{data:(.*?);}, 1]
-      encoded_image = data.sub(%r{^data:.*;base64,}, '')
-      decoded_image = Base64.decode64(encoded_image)
-      @sketch.image.attach(
-        io: StringIO.new(decoded_image),
-        filename: "sketch.png",
-        content_type: content_type
-      )
+      image_data = params[:sketch][:image_data]
+      content_type = "image/png"
+      # Remove the data URL prefix if present
+      if image_data =~ /^data:(.*?);base64,/
+        image_data = image_data.split(',')[1]
+      end
+      decoded_data = Base64.decode64(image_data)
+      @sketch.image.attach(io: StringIO.new(decoded_data), filename: "sketch.png", content_type: content_type)
     end
+
     if @sketch.save
-      # Generate thumbnail after saving and attaching image
-      ThumbnailGenerator.new(@sketch).generate if @sketch.image.attached?
-      redirect_to @sketch, notice: "Sketch was successfully created."
+      ::ThumbnailGenerator.new(@sketch).generate
+      redirect_to @sketch, notice: "Sketch was successfully uploaded and processed."
     else
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -36,12 +44,12 @@ class SketchesController < ApplicationController
   end
 
   def show
-    @sketch = Sketch.find(params[:id])
+    @sketch = current_user.sketches.find(params[:id])
   end
 
   private
 
   def sketch_params
-    params.require(:sketch).permit(:title, :description) # remove :image_data
+    params.require(:sketch).permit(:title, :description)
   end
 end

@@ -10,6 +10,7 @@ class ThumbnailGenerator
   
     def generate
         return unless @sketch.image.attached?
+        puts "Generating thumbnail for sketch #{@sketch.id}"
         
         # Validate API key is configured
         unless OpenAI::Configuration.api_key.present?
