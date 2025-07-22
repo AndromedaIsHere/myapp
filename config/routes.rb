@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  devise_for :users
   resources :sketches do
     member do
       post :create_thumbnail
