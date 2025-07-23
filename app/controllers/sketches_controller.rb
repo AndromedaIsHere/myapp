@@ -26,8 +26,9 @@ class SketchesController < ApplicationController
     end
 
     if @sketch.save
-      ::ThumbnailGenerator.new(@sketch).generate
-      redirect_to @sketch, notice: "Sketch was successfully uploaded and processed."
+      # Enqueue background job for thumbnail generation
+      ThumbnailWorker.perform_async(@sketch.id)
+      redirect_to @sketch, notice: "Sketch was successfully uploaded. Thumbnail generation is in progress."
     else
       render :new, status: :unprocessable_entity
     end

@@ -4,4 +4,8 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
   has_many :sketches, dependent: :destroy
+
+  def admin?
+    admin
+  end
 end

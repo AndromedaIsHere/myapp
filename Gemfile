@@ -70,3 +70,5 @@ group :test do
 end
 
 gem 'multipart-post'
+
+gem "sidekiq"

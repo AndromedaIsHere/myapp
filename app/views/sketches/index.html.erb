@@ -5,14 +5,20 @@
     <% @sketches.each do |sketch| %>
       <div style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; width: 200px;">
         <h3><%= link_to "Sketch ##{sketch.id}", sketch_path(sketch) %></h3>
-        <% if sketch.generated_thumbnail_url.present? %>
-          <%= image_tag sketch.generated_thumbnail_url, style: "max-width: 100%; height: auto;" %>
-        <% elsif sketch.image.attached? %>
-          <%= image_tag sketch.image, style: "max-width: 100%; height: auto;" %>
+        <% if sketch.status == "completed" && sketch.generated_thumbnail_url.present? %>
+          <%= image_tag sketch.generated_thumbnail_url, style: "max-width: 100%; height: auto; margin-bottom: 10px;" %>
         <% else %>
-          <p>No image</p>
+          <div style="width: 100%; height: 150px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+            <% if sketch.status == "processing" %>
+              <span>Processing...</span>
+              <small style="margin-top: 5px; color: #666;">Please check back soon</small>
+            <% elsif sketch.status == "failed" %>
+              <span>Processing failed</span>
+            <% else %>
+              <span><%= sketch.status || "Unknown status" %></span>
+            <% end %>
+          </div>
         <% end %>
-        <p>Status: <%= sketch.status %></p>
         <p>Created: <%= sketch.created_at.strftime("%Y-%m-%d %H:%M") %></p>
       </div>
     <% end %>

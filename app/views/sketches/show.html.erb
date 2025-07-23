@@ -21,7 +21,16 @@
     <% if @sketch.status == "completed" && @sketch.generated_thumbnail_url.present? %>
       <%= image_tag @sketch.generated_thumbnail_url, style: "max-width: 500px; max-height: 500px;" %>
     <% else %>
-      <p>Status: <%= @sketch.status || "Not processed" %></p>
+      <div style="padding: 20px; background-color: #f8f9fa; border-radius: 5px; text-align: center;">
+        <% if @sketch.status == "processing" %>
+          <p>Your thumbnail is being generated...</p>
+          <p><small>This may take a minute. Please refresh the page to check the status.</small></p>
+        <% elsif @sketch.status == "failed" %>
+          <p>Sorry, thumbnail generation failed.</p>
+        <% else %>
+          <p>Status: <%= @sketch.status || "Not processed" %></p>
+        <% end %>
+      </div>
     <% end %>
   </div>
 </div>
