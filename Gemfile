@@ -43,6 +43,14 @@ gem "thruster", require: false
 # User Authentication
 gem "devise"
 
+# Error tracking and monitoring
+gem 'sentry-ruby'
+gem 'sentry-rails'
+gem 'sentry-sidekiq'
+
+# Rate limiting and security with Rack Attack
+gem "rack-attack"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
