@@ -18,8 +18,13 @@
 
   <div>
     <h2>Generated Thumbnaillll</h2>
-    <% if @sketch.status == "completed" && @sketch.generated_thumbnail_url.present? %>
-      <%= image_tag @sketch.generated_thumbnail_url, style: "max-width: 500px; max-height: 500px;" %>
+    <% if @sketch.best_thumbnail.present? %>
+      <%= image_tag @sketch.best_thumbnail, style: "max-width: 500px; max-height: 500px;" %>
+      <% if @sketch.generated_thumbnail_url.present? %>
+        <p><small style="color: #666;">AI-generated thumbnail</small></p>
+      <% else %>
+        <p><small style="color: #666;">Processed thumbnail</small></p>
+      <% end %>
     <% else %>
       <div style="padding: 20px; background-color: #f8f9fa; border-radius: 5px; text-align: center;">
         <% if @sketch.status == "processing" %>
