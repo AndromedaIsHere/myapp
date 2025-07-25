@@ -86,3 +86,11 @@ production:
     <<: *default
     url: <%= ENV['DATABASE_URL'] %>
     # Using the same database for cable as for primary
+  cache:
+    <<: *default
+    url: <%= ENV['DATABASE_URL'] %>
+    # Using the same database for cache as for primary
+  queue:
+    <<: *default
+    url: <%= ENV['DATABASE_URL'] %>
+    # Using the same database for queue as for primary
