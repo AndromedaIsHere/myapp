@@ -81,3 +81,8 @@ production:
   <<: *default
   url: <%= ENV['DATABASE_URL'] %>
   # The database_url environment variable is automatically set by Heroku
+  
+  cable:
+    <<: *default
+    url: <%= ENV['DATABASE_URL'] %>
+    # Using the same database for cable as for primary

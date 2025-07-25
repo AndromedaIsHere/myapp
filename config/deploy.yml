@@ -58,6 +58,7 @@ env:
     # This should be a PostgreSQL connection string like:
     # postgresql://username:password@host:port/database_name
     # Example: postgresql://myapp:password@localhost:5432/myapp_production
+    # Note: SolidCable uses the same DATABASE_URL for cable operations
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug

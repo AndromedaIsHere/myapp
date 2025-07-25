@@ -10,8 +10,9 @@ test:
 
 production:
   adapter: solid_cable
-  connects_to:
-    database:
-      writing: cable
+  # Remove the connects_to section since we're using the default database
+  # connects_to:
+  #   database:
+  #     writing: cable
   polling_interval: 0.1.seconds
   message_retention: 1.day
