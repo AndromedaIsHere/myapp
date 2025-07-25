@@ -78,10 +78,10 @@ test:
 # for a full overview on how database connection configuration can be specified.
 #
 production:
-  <<: *default
-  url: <%= ENV['DATABASE_URL'] %>
-  # The database_url environment variable is automatically set by Heroku
-  
+  primary: &primary_production
+    <<: *default
+    url: <%= ENV['DATABASE_URL'] %>
+    # The database_url environment variable is automatically set by Heroku
   cable:
     <<: *default
     url: <%= ENV['DATABASE_URL'] %>
