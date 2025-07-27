@@ -4,6 +4,7 @@ class ThumbnailWorker
 
   def perform(sketch_id)
     sketch = Sketch.find_by(id: sketch_id)
+    puts "Sketch in ThumbnailWorker: #{sketch.inspect}"
     return unless sketch && sketch.image.attached?
 
     generator = ThumbnailGenerator.new(sketch)
