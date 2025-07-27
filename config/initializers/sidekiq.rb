@@ -1,7 +1,10 @@
 require "sidekiq"
 
 Sidekiq.configure_server do |config|
-  config.redis = { url: ENV["REDIS_URL"] }
+  config.redis = { 
+    url: ENV["REDIS_URL"],
+    ssl_params: { verify_mode: OpenSSL::SSL::VERIFY_NONE }
+  }
   
   # Configure Sentry for Sidekiq
   config.error_handlers << proc do |ex, context|
@@ -10,5 +13,8 @@ Sidekiq.configure_server do |config|
 end
 
 Sidekiq.configure_client do |config|
-  config.redis = { url: ENV["REDIS_URL"] }
+  config.redis = { 
+    url: ENV["REDIS_URL"],
+    ssl_params: { verify_mode: OpenSSL::SSL::VERIFY_NONE }
+  }
 end 
