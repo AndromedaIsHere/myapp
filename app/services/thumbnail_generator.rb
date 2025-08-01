@@ -85,7 +85,7 @@ class ThumbnailGenerator
         # For image editing, we need to send multipart form data
         form_data = [
           [ "model", "gpt-image-1" ],
-          [ "prompt", "Create a clean, eye-catching thumbnail based on the uploaded image. Highlight the main subject, crop to a 16:9 aspect ratio, enhance the colors and sharpness, and add a subtle blur or dark vignette to the background for depth. Ensure it's visually appealing as a YouTube or blog thumbnail. Add optional bold text overlay with high contrast, keeping it minimal and readable at a glance." ]
+          [ "prompt", "Generate a thumbnail for a YouTube video based on the uploaded image. The thumbnail should be a 16:9 aspect ratio, and the main subject should be clearly visible. The background should be blurred, and the text should be bold and readable." ]
         ]
     
         # Add the main image
