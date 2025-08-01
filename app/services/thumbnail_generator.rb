@@ -4,6 +4,7 @@ class ThumbnailGenerator
   require "json"
   require "base64"
   require "fileutils"
+  require "stringio"
     def initialize(sketch)
       @sketch = sketch
     end
@@ -21,8 +22,14 @@ class ThumbnailGenerator
 
         # Create a temporary file from the attached image
         image_path = Rails.root.join("tmp", "sketch_#{@sketch.id}.png")
-        File.open(image_path, "wb") do |file|
-          file.write(@sketch.image.download)
+        begin
+          File.open(image_path, "wb") do |file|
+            file.write(@sketch.image.download)
+          end
+        rescue ActiveStorage::FileNotFoundError => e
+          Rails.logger.error("Original image file not found (likely stored on disk but now on S3): #{e.message}")
+          @sketch.update!(status: "failed")
+          return
         end
     
         # Call OpenAI API to generate thumbnail
@@ -33,29 +40,20 @@ class ThumbnailGenerator
           # Decode the base64 image
           decoded_image = Base64.decode64(response["data"][0]["b64_json"])
     
-          # Store the generated thumbnail
-          thumbnail_path = Rails.root.join("tmp", "thumbnail_#{@sketch.id}.png")
-          File.open(thumbnail_path, "wb") do |file|
-            file.write(decoded_image)
-          end
+          # Store the generated thumbnail using ActiveStorage (will go to S3 in production)
+          @sketch.generated_thumbnail.attach(
+            io: StringIO.new(decoded_image),
+            filename: "thumbnail_#{@sketch.id}.png",
+            content_type: "image/png"
+          )
     
-          # Save to cloud storage or CDN (simplified for now)
-          # In a real app, you might upload this to S3, Cloudinary, etc.
-          public_path = Rails.root.join("public", "thumbnails")
-          FileUtils.mkdir_p(public_path) unless Dir.exist?(public_path)
-          public_thumbnail_path = File.join(public_path, "thumbnail_#{@sketch.id}.png")
-          FileUtils.cp(thumbnail_path, public_thumbnail_path)
-    
-          # Update sketch with the thumbnail URL
-          thumbnail_url = "/thumbnails/thumbnail_#{@sketch.id}.png"
+          # Update sketch status and keep the old URL field for backward compatibility
           @sketch.update!(
-            generated_thumbnail_url: thumbnail_url,
             status: "completed"
           )
     
           # Clean up temporary files
           File.delete(image_path) if File.exist?(image_path)
-          File.delete(thumbnail_path) if File.exist?(thumbnail_path)
         else
           @sketch.update!(status: "failed")
         end

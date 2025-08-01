@@ -48,6 +48,9 @@ gem 'sentry-ruby'
 gem 'sentry-rails'
 gem 'sentry-sidekiq'
 
+# AWS SDK for S3 storage
+gem "aws-sdk-s3", require: false
+
 # Rate limiting and security with Rack Attack
 gem "rack-attack"
 
