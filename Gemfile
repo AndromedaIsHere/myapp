@@ -16,7 +16,12 @@ gem "turbo-rails"
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
-
+gem "devise"
+gem "rack-attack"
+gem "sentry-ruby"
+gem "sidekiq"
+gem "sentry-rails"
+gem "sentry-sidekiq"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
@@ -25,6 +30,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
 gem "solid_cache"
+gem "solid_queue"
 gem "solid_cable"
 
 # Reduces boot times through caching; required in config/boot.rb
@@ -37,22 +43,7 @@ gem "kamal", require: false
 gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-gem "image_processing", "~> 1.2"
-gem "ruby-vips", ">= 2.1.0"
-#
-# User Authentication
-gem "devise"
-
-# Error tracking and monitoring
-gem 'sentry-ruby'
-gem 'sentry-rails'
-gem 'sentry-sidekiq'
-
-# AWS SDK for S3 storage
-gem "aws-sdk-s3", require: false
-
-# Rate limiting and security with Rack Attack
-gem "rack-attack"
+# gem "image_processing", "~> 1.2"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -63,10 +54,6 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
-
-
-  # Load environment variables from .env file
-  gem "dotenv-rails"
 end
 
 group :development do
@@ -79,7 +66,3 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
-
-gem 'multipart-post'
-
-gem "sidekiq"

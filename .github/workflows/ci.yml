@@ -99,29 +99,3 @@ jobs:
           name: screenshots
           path: ${{ github.workspace }}/tmp/screenshots
           if-no-files-found: ignore
-
-  deploy:
-    needs: [test, lint, scan_ruby, scan_js]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
-          
-      - name: Upload source maps to Sentry
-        if: env.SENTRY_AUTH_TOKEN
-        run: |
-          npx @sentry/cli releases new ${{ github.sha }}
-          npx @sentry/cli releases set-commits ${{ github.sha }} --auto
-          npx @sentry/cli releases finalize ${{ github.sha }}
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: your-org
-          SENTRY_PROJECT: your-project
