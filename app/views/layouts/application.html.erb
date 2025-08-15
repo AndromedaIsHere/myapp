@@ -22,6 +22,19 @@
   </head>
 
   <body>
+    <% if notice %>
+      <div style="color: green; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; margin: 10px;"><%= notice %></div>
+    <% end %>
+    <% if alert %>
+      <div style="color: red; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; margin: 10px;"><%= alert %></div>
+    <% end %>
+    
     <%= yield %>
+    
+    <%# Load Fabric.js at the end of body for better compatibility %>
+    <script src="https://unpkg.com/fabric@4.6.0/dist/fabric.min.js"></script>
+    
+    <%# JavaScript import map tags after Fabric.js %>
+    <%= javascript_importmap_tags %>
   </body>
 </html>
