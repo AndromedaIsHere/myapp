@@ -1,14 +1,37 @@
 <h1>Create New Sketch</h1>
+<div class="creation-options" style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+  <p style="margin: 0; color: #495057; font-size: 15px;">
+    🎨 <strong>Two ways to create:</strong> 
+    <span style="color: #007bff;">Draw directly on the canvas</span> using the tools below, 
+    or <span style="color: #28a745;">upload an existing image file</span> at the bottom of the form.
+  </p>
+</div>
 
 <!-- Canvas Editor -->
 <div data-controller="canvas-editor" class="canvas-container">
   <!-- Tool Panel -->
   <div class="tool-panel">
     <div class="tools">
-      <button type="button" class="tool-button" data-action="click->canvas-editor#setDrawMode">Draw</button>
-      <button type="button" class="tool-button" data-action="click->canvas-editor#addRectangle">Rectangle</button>
-      <button type="button" class="tool-button" data-action="click->canvas-editor#addCircle">Circle</button>
-      <button type="button" class="tool-button" data-action="click->canvas-editor#clearCanvas">Clear</button>
+      <!-- Drawing Tools -->
+      <button type="button" class="tool-button" id="draw-btn" data-action="click->canvas-editor#setDrawMode">✏️ Pencil</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#setCircleBrush">⭕ Circle Brush</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#setSprayBrush">💨 Spray</button>
+      <button type="button" class="tool-button" id="eraser-btn" data-action="click->canvas-editor#enableEraser">🧹 Eraser</button>
+      
+      <!-- Shape Tools -->
+      <button type="button" class="tool-button" data-action="click->canvas-editor#addText">📝 Text</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#addRectangle">⬜ Rectangle</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#addCircle">⚫ Circle</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#addLine">📏 Line</button>
+      
+      <!-- Action Tools -->
+      <button type="button" class="tool-button" data-action="click->canvas-editor#deleteSelected">🗑️ Delete</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#clearCanvas">🧽 Clear All</button>
+    </div>
+    
+    <!-- Tool Status Display -->
+    <div class="tool-status">
+      <span id="current-tool-display">Current tool: Draw</span>
     </div>
     
     <div class="tool-options">
@@ -20,6 +43,10 @@
         <label for="brush-size">Brush Size:</label>
         <input type="range" id="brush-size" min="1" max="50" value="10" data-canvas-editor-target="brushSize">
         <span id="brush-size-display">10</span>
+      </div>
+      <div>
+        <label for="image-upload">📁 Upload Image:</label>
+        <input type="file" id="image-upload" accept="image/*" data-canvas-editor-target="imageUpload" data-action="change->canvas-editor#handleImageUpload">
       </div>
     </div>
   </div>
@@ -42,6 +69,14 @@
 
     <!-- Hidden field to store canvas data -->
     <%= form.hidden_field :canvas_data, data: { canvas_editor_target: "dataField" } %>
+    
+    <!-- Option to upload file instead of using canvas -->
+    <div class="upload-option" style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #28a745;">
+      <h4 style="margin: 0 0 10px 0; color: #155724;">💡 Alternative: Upload Existing Image</h4>
+      <p style="margin: 0 0 10px 0; font-size: 14px; color: #155724;">Instead of drawing, you can upload an existing image file to generate a thumbnail.</p>
+      <%= form.file_field :image, accept: "image/*", style: "margin-bottom: 10px;" %>
+      <small style="color: #6c757d; display: block;">Supported formats: JPG, PNG, GIF. If you upload a file, it will be used instead of the canvas drawing.</small>
+    </div>
 
     <div style="margin-top: 20px;">
       <%= form.submit "Create Thumbnail" %>
@@ -71,24 +106,89 @@
   }
 
   .tools {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .tool-button {
-    padding: 8px 16px;
-    margin-right: 8px;
-    background-color: #f1f1f1;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
     cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
   }
 
   .tool-button:hover {
-    background-color: #e5e5e5;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+  }
+
+  .tool-button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
   }
 
   .tool-options {
     display: flex;
     gap: 20px;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+  }
+
+  .tool-status {
+    margin: 15px 0 10px 0;
+    padding: 8px 12px;
+    background-color: #e3f2fd;
+    border-radius: 6px;
+    font-size: 14px;
+    border-left: 4px solid #2196f3;
+  }
+
+  .upload-option {
+    border: 1px solid #d4edda !important;
+  }
+
+  .upload-option h4 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .upload-option input[type="file"] {
+    padding: 6px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .tool-options input[type="file"] {
+    padding: 4px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 12px;
+  }
+
+  .tool-options > div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .tool-options label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
   }
 </style>

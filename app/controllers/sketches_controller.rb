@@ -15,9 +15,13 @@ class SketchesController < ApplicationController
     @sketch = current_user.sketches.build
     @sketch.status = "processing"
 
-    # Handle canvas data if provided
-    if params[:sketch][:canvas_data].present?
-      # Extract the base64 data from the data URL
+    # Handle image attachment with priority: File upload > Canvas data > Legacy image data
+    if sketch_params[:image].present?
+      # Priority 1: Handle file upload
+      @sketch.image.attach(sketch_params[:image])
+      Rails.logger.info("Sketch created from uploaded file: #{sketch_params[:image].original_filename}")
+    elsif params[:sketch][:canvas_data].present?
+      # Priority 2: Handle canvas data
       data_uri = params[:sketch][:canvas_data]
       encoded_image = data_uri.split(",")[1]
       decoded_image = Base64.decode64(encoded_image)
@@ -34,8 +38,9 @@ class SketchesController < ApplicationController
         filename: "sketch-#{Time.current.to_i}.png",
         content_type: "image/png"
       )
+      Rails.logger.info("Sketch created from canvas drawing")
     elsif params[:sketch][:image_data].present?
-      # Fallback for direct image data
+      # Priority 3: Fallback for legacy direct image data
       image_data = params[:sketch][:image_data]
       content_type = "image/png"
       # Remove the data URL prefix if present
@@ -44,6 +49,7 @@ class SketchesController < ApplicationController
       end
       decoded_data = Base64.decode64(image_data)
       @sketch.image.attach(io: StringIO.new(decoded_data), filename: "sketch.png", content_type: content_type)
+      Rails.logger.info("Sketch created from legacy image data")
     end
 
     if @sketch.save
@@ -72,6 +78,6 @@ class SketchesController < ApplicationController
   private
 
   def sketch_params
-    params.require(:sketch).permit(:title, :description, :canvas_data)
+    params.require(:sketch).permit(:title, :description, :canvas_data, :image)
   end
 end
