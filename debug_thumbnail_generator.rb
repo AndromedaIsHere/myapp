@@ -30,4 +30,8 @@ generator.generate
 
 puts "Thumbnail generated!"
 puts "Status: #{sketch.status}"
-puts "Thumbnail URL: #{sketch.generated_thumbnail_url}"
+puts "Generated thumbnail attached: #{sketch.generated_thumbnail.attached?}"
+if sketch.generated_thumbnail.attached?
+  puts "Thumbnail filename: #{sketch.generated_thumbnail.filename}"
+  puts "Thumbnail content type: #{sketch.generated_thumbnail.content_type}"
+end

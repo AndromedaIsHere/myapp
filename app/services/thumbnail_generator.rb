@@ -10,59 +10,100 @@ class ThumbnailGenerator
     end
   
     def generate
-        return unless @sketch.image.attached?
-        puts "Generating thumbnail for sketch #{@sketch.id}"
+        return unless @sketch&.image&.attached?
+        
+        Rails.logger.info("Starting thumbnail generation for sketch #{@sketch.id}")
+        image_path = nil
         
         # Validate API key is configured
         unless OpenAI::Configuration.api_key.present?
-          Rails.logger.error("OpenAI API key not configured")
-          @sketch.update!(status: "failed")
-          return
+          Rails.logger.error("OpenAI API key not configured for sketch #{@sketch.id}")
+          update_status("failed")
+          return false
         end
 
-        # Create a temporary file from the attached image
-        image_path = Rails.root.join("tmp", "sketch_#{@sketch.id}.png")
         begin
-          File.open(image_path, "wb") do |file|
-            file.write(@sketch.image.download)
+          ActiveRecord::Base.transaction do
+            # Update status to processing
+            @sketch.update!(status: "processing")
+            
+            # Create a temporary file from the attached image
+            image_path = Rails.root.join("tmp", "sketch_#{@sketch.id}_#{Time.current.to_i}.png")
+            
+            File.open(image_path, "wb") do |file|
+              file.write(@sketch.image.download)
+            end
+            
+            Rails.logger.info("Downloaded image to temporary file for sketch #{@sketch.id}")
+        
+            # Call OpenAI API to generate thumbnail
+            response = call_openai_api(image_path)
+        
+            if successful_generation?(response)
+              process_successful_generation(response)
+              Rails.logger.info("Successfully generated thumbnail for sketch #{@sketch.id}")
+              return true
+            else
+              Rails.logger.warn("OpenAI API did not return expected data for sketch #{@sketch.id}")
+              update_status("failed")
+              return false
+            end
           end
         rescue ActiveStorage::FileNotFoundError => e
-          Rails.logger.error("Original image file not found (likely stored on disk but now on S3): #{e.message}")
-          @sketch.update!(status: "failed")
-          return
+          Rails.logger.error("Image file not found for sketch #{@sketch.id}: #{e.message}")
+          update_status("failed")
+          return false
+        rescue Net::TimeoutError => e
+          Rails.logger.error("OpenAI API timeout for sketch #{@sketch.id}: #{e.message}")
+          update_status("failed")
+          return false
+        rescue JSON::ParserError => e
+          Rails.logger.error("Invalid JSON response from OpenAI API for sketch #{@sketch.id}: #{e.message}")
+          update_status("failed")
+          return false
+        rescue => e
+          Rails.logger.error("Thumbnail generation failed for sketch #{@sketch.id}: #{e.class.name} - #{e.message}")
+          Rails.logger.error(e.backtrace.join("\n")) if Rails.env.development?
+          update_status("failed")
+          return false
+        ensure
+          # Always clean up temporary files
+          if image_path && File.exist?(image_path)
+            File.delete(image_path)
+            Rails.logger.debug("Cleaned up temporary file for sketch #{@sketch.id}")
+          end
         end
-    
-        # Call OpenAI API to generate thumbnail
-        response = call_openai_api(image_path)
-        puts "Response: #{response}"
-    
-        if response && response["data"] && response["data"][0] && response["data"][0]["b64_json"]
-          # Decode the base64 image
-          decoded_image = Base64.decode64(response["data"][0]["b64_json"])
-    
-          # Store the generated thumbnail using ActiveStorage (will go to S3 in production)
-          @sketch.generated_thumbnail.attach(
-            io: StringIO.new(decoded_image),
-            filename: "thumbnail_#{@sketch.id}.png",
-            content_type: "image/png"
-          )
-    
-          # Update sketch status and keep the old URL field for backward compatibility
-          @sketch.update!(
-            status: "completed"
-          )
-    
-          # Clean up temporary files
-          File.delete(image_path) if File.exist?(image_path)
-        else
-          @sketch.update!(status: "failed")
-        end
-      rescue => e
-        Rails.logger.error("Thumbnail generation failed: #{e.message}")
-        @sketch.update!(status: "failed")
       end
     
       private
+      
+      def update_status(status)
+        @sketch.update_column(:status, status)
+      rescue => e
+        Rails.logger.error("Failed to update sketch #{@sketch.id} status to #{status}: #{e.message}")
+      end
+      
+      def successful_generation?(response)
+        response && 
+        response["data"] && 
+        response["data"][0] && 
+        response["data"][0]["b64_json"].present?
+      end
+      
+      def process_successful_generation(response)
+        # Decode the base64 image
+        decoded_image = Base64.decode64(response["data"][0]["b64_json"])
+
+        # Store the generated thumbnail using ActiveStorage
+        @sketch.generated_thumbnail.attach(
+          io: StringIO.new(decoded_image),
+          filename: "thumbnail_#{@sketch.id}.png",
+          content_type: "image/png"
+        )
+
+        # Update sketch status
+        @sketch.update!(status: "completed")
+      end
     
       def call_openai_api(main_image_path)
         # Use the correct endpoint for image editing

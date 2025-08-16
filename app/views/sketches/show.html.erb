@@ -20,7 +20,7 @@
     <h2>Generated Thumbnaillll</h2>
     <% if @sketch.best_thumbnail.present? %>
       <%= image_tag @sketch.best_thumbnail, style: "max-width: 500px; max-height: 500px;" %>
-      <% if @sketch.generated_thumbnail_url.present? %>
+      <% if @sketch.generated_thumbnail.attached? %>
         <p><small style="color: #666;">AI-generated thumbnail</small></p>
       <% else %>
         <p><small style="color: #666;">Processed thumbnail</small></p>

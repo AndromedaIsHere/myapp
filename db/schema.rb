@@ -44,7 +44,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_24_040610) do
 
   create_table "sketches", force: :cascade do |t|
     t.string "title"
-    t.string "generated_thumbnail_url"
     t.string "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

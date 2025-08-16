@@ -3,5 +3,6 @@
 :queues:
   - [default, 1]
   - [mailers, 2]
+  - [active_storage, 2]
   - [thumbnails, 3]
 :daemon: false 

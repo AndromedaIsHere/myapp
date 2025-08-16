@@ -1,7 +1,5 @@
 one:
-  status: MyString
-  generated_thumbnail_url: MyString
+  status: processing
 
 two:
-  status: MyString
-  generated_thumbnail_url: MyString 
+  status: completed 
