@@ -1,6 +1,15 @@
 namespace :admin do
-  desc "Make the first user an admin"
+  desc "Make the first user an admin (with production confirmation)"
   task make_first_user_admin: :environment do
+    if Rails.env.production?
+      print "You are running this in PRODUCTION. Continue? (y/N): "
+      input = STDIN.gets.chomp
+      unless input.downcase == 'y'
+        puts "Aborted."
+        exit
+      end
+    end
+    
     user = User.order(:created_at).first
 
     if user
