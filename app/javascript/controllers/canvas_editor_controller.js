@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="canvas-editor"
 export default class extends Controller {
-  static targets = ["canvas", "imageDataField", "drawBtn", "textBtn", "imageUpload", "clearBtn", "form"]
+  static targets = ["canvas", "colorPicker", "brushSize", "dataField"]
 
   connect() {
     console.log("Canvas editor controller connected");
@@ -31,6 +31,10 @@ export default class extends Controller {
         height: 600
       });
       
+      // Set default drawing brush
+      this.fabricCanvas.freeDrawingBrush.width = 10;
+      this.fabricCanvas.freeDrawingBrush.color = "#000000";
+      
       console.log("Canvas initialized successfully");
       this.setupEventListeners();
     } catch (error) {
@@ -44,63 +48,75 @@ export default class extends Controller {
       return;
     }
 
-    this.drawBtnTarget.addEventListener("click", () => {
-      console.log("Draw mode activated");
-      this.fabricCanvas.isDrawingMode = true;
-    });
-
-    this.textBtnTarget.addEventListener("click", () => {
-      console.log("Text mode activated");
-      this.fabricCanvas.isDrawingMode = false;
-      const text = new window.fabric.IText('Type here', { 
-        left: 100, 
-        top: 100,
-        fontSize: 20,
-        fill: 'black'
+    // Color picker change
+    if (this.hasColorPickerTarget) {
+      this.colorPickerTarget.addEventListener("change", (e) => {
+        this.fabricCanvas.freeDrawingBrush.color = e.target.value;
       });
-      this.fabricCanvas.add(text);
-      this.fabricCanvas.setActiveObject(text);
-      text.enterEditing();
-      text.selectAll();
-    });
+    }
 
-    this.imageUploadTarget.addEventListener("change", (e) => {
-      console.log("Image upload triggered");
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (f) => {
-        window.fabric.Image.fromURL(f.target.result, (img) => {
-          img.set({ 
-            left: 150, 
-            top: 150, 
-            scaleX: 0.5, 
-            scaleY: 0.5 
-          });
-          this.fabricCanvas.add(img);
-          this.fabricCanvas.renderAll();
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+    // Brush size change
+    if (this.hasBrushSizeTarget) {
+      this.brushSizeTarget.addEventListener("input", (e) => {
+        const size = parseInt(e.target.value, 10);
+        this.fabricCanvas.freeDrawingBrush.width = size;
+        // Update display
+        const display = document.getElementById('brush-size-display');
+        if (display) display.textContent = size;
+      });
+    }
+  }
 
-    this.clearBtnTarget.addEventListener("click", () => {
-      console.log("Clearing canvas");
-      this.fabricCanvas.clear();
-    });
+  // Tool methods
+  setDrawMode() {
+    console.log("Draw mode activated");
+    this.fabricCanvas.isDrawingMode = true;
+  }
 
-    this.formTarget.addEventListener("submit", (e) => {
-      console.log("Form submitting, capturing canvas data");
-      if (this.fabricCanvas) {
-        const dataURL = this.fabricCanvas.toDataURL({ 
-          format: 'png',
-          quality: 0.8
-        });
-        this.imageDataFieldTarget.value = dataURL;
-        console.log("Canvas data captured");
-      }
+  addRectangle() {
+    console.log("Adding rectangle");
+    this.fabricCanvas.isDrawingMode = false;
+    const rect = new window.fabric.Rect({
+      left: 100,
+      top: 100,
+      fill: 'transparent',
+      stroke: this.colorPickerTarget?.value || '#000000',
+      strokeWidth: 2,
+      width: 100,
+      height: 100
     });
+    this.fabricCanvas.add(rect);
+  }
+
+  addCircle() {
+    console.log("Adding circle");
+    this.fabricCanvas.isDrawingMode = false;
+    const circle = new window.fabric.Circle({
+      left: 100,
+      top: 100,
+      fill: 'transparent',
+      stroke: this.colorPickerTarget?.value || '#000000',
+      strokeWidth: 2,
+      radius: 50
+    });
+    this.fabricCanvas.add(circle);
+  }
+
+  clearCanvas() {
+    console.log("Clearing canvas");
+    this.fabricCanvas.clear();
+  }
+
+  prepareSubmit(event) {
+    console.log("Form submitting, capturing canvas data");
+    if (this.fabricCanvas) {
+      const dataURL = this.fabricCanvas.toDataURL({ 
+        format: 'png',
+        quality: 0.8
+      });
+      this.dataFieldTarget.value = dataURL;
+      console.log("Canvas data captured");
+    }
   }
 
   disconnect() {

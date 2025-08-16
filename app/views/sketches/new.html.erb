@@ -1,21 +1,94 @@
-<h1>New Sketch</h1>
+<h1>Create New Sketch</h1>
 
-<%= form_with(model: @sketch, local: true, html: { id: "new-sketch-form", data: { controller: "canvas-editor", canvas_editor_target: "form" } }) do |form| %>
-  <section>
-    <canvas id="sketch-canvas" width="800" height="600" style="border:1px solid #ccc" data-canvas-editor-target="canvas"></canvas>
-  </section>
-  <nav style="margin: 10px 0;">
-    <button type="button" id="draw-btn" data-canvas-editor-target="drawBtn">Draw</button>
-    <button type="button" id="text-btn" data-canvas-editor-target="textBtn">Text</button>
-    <input type="file" id="image-upload" accept="image/*" style="display:inline" data-canvas-editor-target="imageUpload"/>
-    <button type="button" id="clear-btn" data-canvas-editor-target="clearBtn">Clear</button>
-  </nav>
-  <%= form.hidden_field :image_data, id: "image-data-field", data: { canvas_editor_target: "imageDataField" } %>
-  <div>
-    <%= form.submit "Generate Thumbnail" %>
+<!-- Canvas Editor -->
+<div data-controller="canvas-editor" class="canvas-container">
+  <!-- Tool Panel -->
+  <div class="tool-panel">
+    <div class="tools">
+      <button type="button" class="tool-button" data-action="click->canvas-editor#setDrawMode">Draw</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#addRectangle">Rectangle</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#addCircle">Circle</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#clearCanvas">Clear</button>
+    </div>
+    
+    <div class="tool-options">
+      <div>
+        <label for="color-picker">Color:</label>
+        <input type="color" id="color-picker" value="#000000" data-canvas-editor-target="colorPicker">
+      </div>
+      <div>
+        <label for="brush-size">Brush Size:</label>
+        <input type="range" id="brush-size" min="1" max="50" value="10" data-canvas-editor-target="brushSize">
+        <span id="brush-size-display">10</span>
+      </div>
+    </div>
   </div>
-<% end %>
-<div style="margin-top: 20px;">
-  <%= link_to "View All Thumbnails", sketches_path %> |
-  <%= link_to "Back to Home", root_path %>
+
+  <!-- Canvas -->
+  <canvas class="editor-canvas" data-canvas-editor-target="canvas"></canvas>
+
+  <!-- Form for submission -->
+  <%= form_with(model: @sketch, local: true, data: { action: "submit->canvas-editor#prepareSubmit" }) do |form| %>
+    <% if @sketch.errors.any? %>
+      <div style="color: red">
+        <h2><%= pluralize(@sketch.errors.count, "error") %> prohibited this sketch from being saved:</h2>
+        <ul>
+          <% @sketch.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <!-- Hidden field to store canvas data -->
+    <%= form.hidden_field :canvas_data, data: { canvas_editor_target: "dataField" } %>
+
+    <div style="margin-top: 20px;">
+      <%= form.submit "Create Thumbnail" %>
+    </div>
+  <% end %>
+
+  <div style="margin-top: 20px;">
+    <%= link_to "View All Thumbnails", sketches_path %> |
+    <%= link_to "Back to Home", root_path %>
+  </div>
 </div>
+
+<style>
+  .canvas-container {
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+  }
+
+  .editor-canvas {
+    width: 800px;
+    height: 600px;
+    border: 1px solid #ddd;
+  }
+
+  .tool-panel {
+    margin-bottom: 20px;
+  }
+
+  .tools {
+    margin-bottom: 10px;
+  }
+
+  .tool-button {
+    padding: 8px 16px;
+    margin-right: 8px;
+    background-color: #f1f1f1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .tool-button:hover {
+    background-color: #e5e5e5;
+  }
+
+  .tool-options {
+    display: flex;
+    gap: 20px;
+  }
+</style>

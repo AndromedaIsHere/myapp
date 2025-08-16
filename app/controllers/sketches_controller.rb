@@ -1,5 +1,7 @@
 class SketchesController < ApplicationController
   before_action :authenticate_user!
+  require "tempfile"
+  require "base64"
 
   def index
     @sketches = current_user.sketches.order(created_at: :desc)
@@ -10,11 +12,30 @@ class SketchesController < ApplicationController
   end
 
   def create
-    @sketch = current_user.sketches.build(sketch_params)
+    @sketch = current_user.sketches.build
     @sketch.status = "processing"
 
-    # Attach image from base64 data if present
-    if params[:sketch][:image_data].present?
+    # Handle canvas data if provided
+    if params[:sketch][:canvas_data].present?
+      # Extract the base64 data from the data URL
+      data_uri = params[:sketch][:canvas_data]
+      encoded_image = data_uri.split(",")[1]
+      decoded_image = Base64.decode64(encoded_image)
+
+      # Create a temp file with the decoded image data
+      temp_file = Tempfile.new([ "sketch", ".png" ])
+      temp_file.binmode
+      temp_file.write(decoded_image)
+      temp_file.rewind
+
+      # Attach the image to the sketch
+      @sketch.image.attach(
+        io: temp_file,
+        filename: "sketch-#{Time.current.to_i}.png",
+        content_type: "image/png"
+      )
+    elsif params[:sketch][:image_data].present?
+      # Fallback for direct image data
       image_data = params[:sketch][:image_data]
       content_type = "image/png"
       # Remove the data URL prefix if present
@@ -28,7 +49,7 @@ class SketchesController < ApplicationController
     if @sketch.save
       # Enqueue background job for thumbnail generation
       ThumbnailWorker.perform_async(@sketch.id)
-      redirect_to @sketch, notice: "Sketch was successfully uploaded. Thumbnail generation is in progress."
+      redirect_to @sketch, notice: "Sketch was successfully created. Thumbnail generation is in progress."
     else
       render :new, status: :unprocessable_entity
     end
@@ -51,6 +72,6 @@ class SketchesController < ApplicationController
   private
 
   def sketch_params
-    params.require(:sketch).permit(:title, :description)
+    params.require(:sketch).permit(:title, :description, :canvas_data)
   end
 end
