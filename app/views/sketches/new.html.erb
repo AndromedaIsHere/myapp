@@ -84,6 +84,20 @@
     <!-- Hidden field to store canvas data -->
     <%= form.hidden_field :canvas_data, data: { canvas_editor_target: "dataField" } %>
     
+    <!-- Prompt field for AI thumbnail generation -->
+    <div class="prompt-section" style="margin-top: 15px; padding: 15px; background-color: #e8f5e8; border-radius: 6px; border-left: 4px solid #28a745;">
+      <h4 style="margin: 0 0 10px 0; color: #155724;">🤖 AI Thumbnail Prompt (Optional)</h4>
+      <p style="margin: 0 0 10px 0; font-size: 14px; color: #155724;">Describe how you want your AI-generated thumbnail to look:</p>
+      <%= form.text_area :prompt, 
+          id: "sketch_prompt",
+          placeholder: "e.g., 'Create a colorful YouTube thumbnail with bold text and eye-catching design'",
+          rows: 3,
+          style: "width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;" %>
+      <small style="color: #6c757d; display: block; margin-top: 5px;">
+        💡 Tip: Be specific about colors, style, text, and mood for better results. Leave blank to use default prompt.
+      </small>
+    </div>
+    
     <!-- Option to upload file instead of using canvas -->
     <div class="upload-option" style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #28a745;">
       <h4 style="margin: 0 0 10px 0; color: #155724;">💡 Alternative: Upload Existing Image</h4>
@@ -231,5 +245,25 @@
 
   .filter-button:active {
     background-color: #e9ecef;
+  }
+
+  .prompt-section {
+    border: 1px solid #c3e6cb !important;
+  }
+
+  .prompt-section h4 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .prompt-section textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  .prompt-section textarea:focus {
+    outline: none;
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
   }
 </style>

@@ -83,6 +83,21 @@ class ThumbnailGenerator
         Rails.logger.error("Failed to update sketch #{@sketch.id} status to #{status}: #{e.message}")
       end
       
+      def get_prompt_for_thumbnail
+        # Base instruction for all thumbnails
+        base_prompt = "Create a youtube thumbnail based on this sketch. It should look hyperrealistic. The sketch is just for reference."
+        
+        if @sketch.prompt.present?
+          # Combine base instruction with user's custom prompt
+          combined_prompt = "#{base_prompt} based on the following description: #{@sketch.prompt}"
+          Rails.logger.info("Using custom prompt for sketch #{@sketch.id}: #{combined_prompt}")
+          combined_prompt
+        else
+          Rails.logger.info("Using default prompt for sketch #{@sketch.id}: #{base_prompt}")
+          base_prompt
+        end
+      end
+      
       def successful_generation?(response)
         response && 
         response["data"] && 
@@ -126,7 +141,7 @@ class ThumbnailGenerator
         # For image editing, we need to send multipart form data
         form_data = [
           [ "model", "gpt-image-1" ],
-          [ "prompt", "Generate a thumbnail for a YouTube video based on the uploaded image." ]
+          [ "prompt", get_prompt_for_thumbnail ]
         ]
     
         # Add the main image

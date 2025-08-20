@@ -40,6 +40,12 @@
   </div>
 </div>
 
+<% if @sketch.prompt.present? %>
+  <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">
+    <h3 style="margin-top: 0;">Your Prompt:</h3>
+    <p style="white-space: pre-wrap;"><%= @sketch.prompt %></p>
+  </div>
+<% end %>
 
 <div style="margin-top: 20px;">
   <%= link_to "Create Another Sketch", new_sketch_path %> |

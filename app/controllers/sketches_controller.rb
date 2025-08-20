@@ -12,8 +12,16 @@ class SketchesController < ApplicationController
   end
 
   def create
-    @sketch = current_user.sketches.build
+    # Build sketch with permitted attributes except canvas_data (which isn't a db column)
+    @sketch = current_user.sketches.build(sketch_params)
     @sketch.status = "processing"
+
+    # Log the prompt being saved
+    if @sketch.prompt.present?
+      Rails.logger.info("Saving sketch with prompt: #{@sketch.prompt}")
+    else
+      Rails.logger.info("Saving sketch without a prompt")
+    end
 
     # Handle image attachment with priority: File upload > Canvas data > Legacy image data
     if sketch_params[:image].present?
@@ -78,6 +86,6 @@ class SketchesController < ApplicationController
   private
 
   def sketch_params
-    params.require(:sketch).permit(:title, :description, :canvas_data, :image)
+    params.require(:sketch).permit(:title, :description, :prompt, :image)
   end
 end

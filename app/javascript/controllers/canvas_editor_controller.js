@@ -689,6 +689,18 @@ export default class extends Controller {
       })
       
       this.dataFieldTarget.value = dataURL
+      
+      // Log that we're submitting the form with canvas data
+      console.log("Preparing to submit form with canvas data")
+      
+      // Log prompt field value for debugging
+      const promptField = document.getElementById("sketch_prompt")
+      if (promptField) {
+        console.log("Prompt field exists with value: " + (promptField.value || "empty"))
+      } else {
+        console.log("Prompt field not found")
+      }
+      
       // Canvas data captured for submission
     } catch (error) {
       console.error('Failed to capture canvas data:', error)
