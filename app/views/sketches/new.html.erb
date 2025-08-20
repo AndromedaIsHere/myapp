@@ -27,6 +27,7 @@
       <!-- Action Tools -->
       <button type="button" class="tool-button" data-action="click->canvas-editor#deleteSelected">🗑️ Delete</button>
       <button type="button" class="tool-button" data-action="click->canvas-editor#clearCanvas">🧽 Clear All</button>
+      <button type="button" class="tool-button" data-action="click->canvas-editor#openImageUpload">🖼️ Add Image</button>
     </div>
     
     <!-- Tool Status Display -->
@@ -47,6 +48,19 @@
       <div>
         <label for="image-upload">📁 Upload Image:</label>
         <input type="file" id="image-upload" accept="image/*" data-canvas-editor-target="imageUpload" data-action="change->canvas-editor#handleImageUpload">
+      </div>
+    </div>
+    
+    <!-- Image Filter Options (shown when image is selected) -->
+    <div class="filter-options" style="display: none;" id="filter-options">
+      <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #495057;">Image Filters:</h4>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="filter-button" data-action="click->canvas-editor#applyImageFilter" data-filter="grayscale">Grayscale</button>
+        <button type="button" class="filter-button" data-action="click->canvas-editor#applyImageFilter" data-filter="sepia">Sepia</button>
+        <button type="button" class="filter-button" data-action="click->canvas-editor#applyImageFilter" data-filter="brightness">Brighter</button>
+        <button type="button" class="filter-button" data-action="click->canvas-editor#applyImageFilter" data-filter="contrast">Contrast</button>
+        <button type="button" class="filter-button" data-action="click->canvas-editor#applyImageFilter" data-filter="invert">Invert</button>
+        <button type="button" class="filter-button" data-action="click->canvas-editor#applyImageFilter" data-filter="reset">Reset</button>
       </div>
     </div>
   </div>
@@ -190,5 +204,32 @@
     font-size: 13px;
     font-weight: 500;
     color: #495057;
+  }
+
+  .filter-options {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+  }
+
+  .filter-button {
+    padding: 4px 8px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s ease;
+  }
+
+  .filter-button:hover {
+    background-color: #f8f9fa;
+    border-color: #6c757d;
+  }
+
+  .filter-button:active {
+    background-color: #e9ecef;
   }
 </style>

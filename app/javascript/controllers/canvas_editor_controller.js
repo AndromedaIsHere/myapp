@@ -162,6 +162,7 @@ export default class extends Controller {
     this.setupColorPickerListener()
     this.setupBrushSizeListener()
     this.setupKeyboardShortcuts()
+    this.setupCanvasSelectionEvents()
   }
 
   /**
@@ -192,14 +193,50 @@ export default class extends Controller {
   }
 
   /**
+   * Set up canvas selection event listeners
+   * @private
+   */
+  setupCanvasSelectionEvents() {
+    this.fabricCanvas.on('selection:created', (e) => {
+      this.handleObjectSelection(e.selected?.[0])
+    })
+    
+    this.fabricCanvas.on('selection:updated', (e) => {
+      this.handleObjectSelection(e.selected?.[0])
+    })
+    
+    this.fabricCanvas.on('selection:cleared', () => {
+      this.handleObjectDeselection()
+    })
+  }
+
+  /**
    * Set up keyboard shortcuts
    * @private
    */
   setupKeyboardShortcuts() {
     this.keydownHandler = (e) => {
-      if (e.key === 'Delete' && this.fabricCanvas.getActiveObject()) {
+      const activeObject = this.fabricCanvas.getActiveObject()
+      
+      // Delete selected objects
+      if (e.key === 'Delete' && activeObject) {
         e.preventDefault()
         this.deleteSelected()
+        return
+      }
+      
+      // Arrow keys for positioning (only if an object is selected)
+      if (activeObject && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault()
+        this.moveObjectWithArrows(activeObject, e.key, e.shiftKey)
+        return
+      }
+      
+      // Escape key to deselect
+      if (e.key === 'Escape') {
+        this.fabricCanvas.discardActiveObject()
+        this.fabricCanvas.renderAll()
+        return
       }
     }
     document.addEventListener('keydown', this.keydownHandler)
@@ -454,6 +491,23 @@ export default class extends Controller {
   // =============================================================================
 
   /**
+   * Open image upload dialog (button-triggered)
+   */
+  openImageUpload() {
+    if (!this.fabricCanvas) return;
+    
+    // Disable drawing mode when adding images
+    this.fabricCanvas.isDrawingMode = false;
+    
+    // Trigger the canvas-specific file input
+    if (this.hasImageUploadTarget) {
+      this.imageUploadTarget.click();
+    }
+    
+    this.updateToolStatus('Ready to Upload Image');
+  }
+
+  /**
    * Handle image file upload to canvas
    * @param {Event} event - File input change event
    */
@@ -479,15 +533,34 @@ export default class extends Controller {
    * @private
    */
   validateImageFile(file) {
-    return file.type.startsWith('image/')
+    const maxSize = 10 * 1024 * 1024; // 10MB limit
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (!allowedTypes.includes(file.type)) {
+      this.showError('Please select a valid image file (JPG, PNG, GIF, WebP)');
+      return false;
+    }
+    
+    if (file.size > maxSize) {
+      this.showError('Image file is too large. Please select a file smaller than 10MB.');
+      return false;
+    }
+    
+    return true;
   }
 
   /**
-   * Load image file to canvas with proper scaling
+   * Load image file to canvas with proper scaling and loading indicator
    * @param {File} file - Image file to load
    * @private
    */
   loadImageToCanvas(file) {
+    // Show loading indicator for large files
+    const isLargeFile = file.size > 1024 * 1024 // 1MB threshold
+    if (isLargeFile) {
+      this.showLoadingIndicator('Loading image...')
+    }
+    
     const reader = new FileReader()
     
     reader.onload = (e) => {
@@ -495,17 +568,39 @@ export default class extends Controller {
         this.scaleAndPositionImage(img)
         this.addShapeToCanvas(img)
         
-        // Image loaded to canvas successfully
+        // Hide loading indicator
+        if (isLargeFile) {
+          this.hideLoadingIndicator()
+        }
         
+        // Image loaded to canvas successfully
         this.updateToolStatus('Image Uploaded')
+        this.showImageManipulationHints()
         
         // Clear the file input to allow uploading the same file again
-        event.target.value = ''
+        const fileInput = this.imageUploadTarget
+        if (fileInput) {
+          fileInput.value = ''
+        }
+      }, {
+        // Add crossOrigin to handle CORS issues
+        crossOrigin: 'anonymous'
       })
     }
     
     reader.onerror = () => {
+      if (isLargeFile) {
+        this.hideLoadingIndicator()
+      }
       this.showError('Failed to load image file')
+    }
+    
+    // Add progress tracking for very large files
+    reader.onprogress = (e) => {
+      if (e.lengthComputable && isLargeFile) {
+        const percentLoaded = Math.round((e.loaded / e.total) * 100)
+        this.updateLoadingProgress(percentLoaded)
+      }
     }
     
     reader.readAsDataURL(file)
@@ -518,15 +613,24 @@ export default class extends Controller {
    */
   scaleAndPositionImage(img) {
     const canvas = this.constructor.CANVAS_CONFIG
-    const scaleX = canvas.width / img.width
-    const scaleY = canvas.height / img.height
-    const scale = Math.min(scaleX, scaleY, 1) // Don't upscale
+    const maxDimension = Math.min(canvas.width, canvas.height) * 0.8
+    const scale = Math.min(maxDimension / img.width, maxDimension / img.height, 1)
     
     img.set({
-      left: (canvas.width - img.width * scale) / 2,
-      top: (canvas.height - img.height * scale) / 2,
+      left: canvas.width / 2,
+      top: canvas.height / 2,
       scaleX: scale,
-      scaleY: scale
+      scaleY: scale,
+      // Enhanced controls from original commit
+      hasControls: true,
+      hasBorders: true,
+      lockUniScaling: false,
+      rotatingPointOffset: 40,
+      cornerSize: 10,
+      cornerColor: 'rgba(0,0,255,0.5)',
+      cornerStrokeColor: 'blue',
+      originX: 'center',
+      originY: 'center'
     })
   }
 
@@ -700,6 +804,239 @@ export default class extends Controller {
   }
 
   /**
+   * Show loading indicator for image uploads
+   * @param {string} message - Loading message to display
+   * @private
+   */
+  showLoadingIndicator(message) {
+    const indicator = document.createElement('div')
+    indicator.id = 'image-loading-indicator'
+    indicator.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        text-align: center;
+      ">
+        <div style="margin-bottom: 10px;">${message}</div>
+        <div id="loading-progress" style="
+          width: 200px;
+          height: 4px;
+          background: #333;
+          border-radius: 2px;
+          overflow: hidden;
+        ">
+          <div style="
+            width: 0%;
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s ease;
+          " id="progress-bar"></div>
+        </div>
+      </div>
+    `
+    document.body.appendChild(indicator)
+  }
+
+  /**
+   * Update loading progress
+   * @param {number} percent - Progress percentage
+   * @private
+   */
+  updateLoadingProgress(percent) {
+    const progressBar = document.getElementById('progress-bar')
+    if (progressBar) {
+      progressBar.style.width = `${percent}%`
+    }
+  }
+
+  /**
+   * Hide loading indicator
+   * @private
+   */
+  hideLoadingIndicator() {
+    const indicator = document.getElementById('image-loading-indicator')
+    if (indicator) {
+      indicator.remove()
+    }
+  }
+
+  /**
+   * Show image manipulation hints
+   * @private
+   */
+  showImageManipulationHints() {
+    const hints = [
+      "💡 Click and drag to move images",
+      "🔄 Use rotation handle (blue dot) to rotate", 
+      "📏 Drag corners to resize",
+      "⌨️ Use arrow keys to fine-tune position",
+      "⌨️ Hold Shift + arrows for larger movements",
+      "⌨️ Press Escape to deselect"
+    ]
+    
+    // Create temporary hint display
+    const hintDisplay = document.createElement('div')
+    hintDisplay.innerHTML = `
+      <div style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #e3f2fd;
+        border: 1px solid #2196f3;
+        border-radius: 8px;
+        padding: 15px;
+        max-width: 300px;
+        z-index: 999;
+        font-size: 13px;
+        line-height: 1.4;
+      ">
+        <div style="font-weight: bold; margin-bottom: 8px;">Image Manipulation Tips:</div>
+        ${hints.map(hint => `<div>${hint}</div>`).join('')}
+        <button onclick="this.parentElement.parentElement.remove()" style="
+          margin-top: 10px;
+          padding: 4px 8px;
+          background: #2196f3;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+        ">Got it!</button>
+      </div>
+    `
+    
+    document.body.appendChild(hintDisplay)
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      if (hintDisplay.parentElement) {
+        hintDisplay.remove()
+      }
+    }, 10000)
+  }
+
+  /**
+   * Move object with arrow keys
+   * @param {Object} object - Fabric.js object to move
+   * @param {string} key - Arrow key pressed
+   * @param {boolean} shiftKey - Whether shift key is held
+   * @private
+   */
+  moveObjectWithArrows(object, key, shiftKey) {
+    const step = shiftKey ? 10 : 1 // Larger steps with Shift
+    
+    switch (key) {
+      case 'ArrowUp':
+        object.set('top', object.top - step)
+        break
+      case 'ArrowDown':
+        object.set('top', object.top + step)
+        break
+      case 'ArrowLeft':
+        object.set('left', object.left - step)
+        break
+      case 'ArrowRight':
+        object.set('left', object.left + step)
+        break
+    }
+    
+    object.setCoords()
+    this.fabricCanvas.renderAll()
+  }
+
+  /**
+   * Handle object selection
+   * @param {Object} selectedObject - The selected Fabric.js object
+   * @private
+   */
+  handleObjectSelection(selectedObject) {
+    const filterOptions = document.getElementById('filter-options')
+    
+    if (selectedObject && selectedObject.type === 'image' && filterOptions) {
+      filterOptions.style.display = 'block'
+    } else if (filterOptions) {
+      filterOptions.style.display = 'none'
+    }
+  }
+
+  /**
+   * Handle object deselection
+   * @private
+   */
+  handleObjectDeselection() {
+    const filterOptions = document.getElementById('filter-options')
+    if (filterOptions) {
+      filterOptions.style.display = 'none'
+    }
+  }
+
+  // =============================================================================
+  // IMAGE FILTER METHODS (Future Enhancement)
+  // =============================================================================
+
+  /**
+   * Handle filter button clicks from HTML
+   * @param {Event} event - Click event from filter button
+   */
+  applyImageFilter(event) {
+    const filterType = event.target.dataset.filter
+    this.applyFilterToImage(filterType)
+  }
+
+  /**
+   * Apply basic image filters to selected image
+   * @param {string} filterType - Type of filter to apply
+   * @private
+   */
+  applyFilterToImage(filterType) {
+    const activeObject = this.fabricCanvas.getActiveObject()
+    
+    if (!activeObject || activeObject.type !== 'image') {
+      this.showError('Please select an image to apply filters')
+      return
+    }
+    
+    // Remove existing filters
+    activeObject.filters = []
+    
+    switch (filterType) {
+      case 'grayscale':
+        activeObject.filters.push(new window.fabric.Image.filters.Grayscale())
+        break
+      case 'sepia':
+        activeObject.filters.push(new window.fabric.Image.filters.Sepia())
+        break
+      case 'brightness':
+        activeObject.filters.push(new window.fabric.Image.filters.Brightness({ brightness: 0.2 }))
+        break
+      case 'contrast':
+        activeObject.filters.push(new window.fabric.Image.filters.Contrast({ contrast: 0.3 }))
+        break
+      case 'invert':
+        activeObject.filters.push(new window.fabric.Image.filters.Invert())
+        break
+      case 'reset':
+        // Filters already cleared above
+        break
+      default:
+        this.showError('Unknown filter type')
+        return
+    }
+    
+    activeObject.applyFilters()
+    this.fabricCanvas.renderAll()
+    
+    this.updateToolStatus(filterType === 'reset' ? 'Filters Removed' : `${this.capitalizeFirst(filterType)} Filter Applied`)
+  }
+
+  /**
    * Clean up resources and event listeners
    * @private
    */
@@ -713,5 +1050,33 @@ export default class extends Controller {
     }
     
     // Canvas editor controller cleaned up
+  }
+
+  // Add this method to restore the button-triggered functionality
+  openImageUpload() {
+    if (!this.fabricCanvas) return;
+    
+    // Disable drawing mode when adding images
+    this.fabricCanvas.isDrawingMode = false;
+    
+    // Trigger the canvas-specific file input
+    if (this.hasImageUploadTarget) {
+      this.imageUploadTarget.click();
+    }
+    
+    this.updateToolStatus('Ready to Upload Image');
+  }
+
+  // Add image manipulation hints
+  addImageManipulationHints() {
+    const hints = [
+      "💡 Click and drag to move images",
+      "🔄 Use rotation handle (blue dot) to rotate",
+      "📏 Drag corners to resize", 
+      "🎯 Hold Shift while resizing to maintain aspect ratio"
+    ];
+    
+    // Display hints when image is selected
+    // Implementation depends on your notification system
   }
 }
